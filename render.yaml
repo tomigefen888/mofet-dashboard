@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: mofet-dashboard
+    env: python
+    plan: free
+    buildCommand: bash -c "pip install --upgrade pip && pip install -r requirements.txt"
+    startCommand: gunicorn app:app
