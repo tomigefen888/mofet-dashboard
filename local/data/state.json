@@ -1,0 +1,17 @@
+{
+  "timestamp": "2025-11-09T00:10:52.871444Z",
+  "routers": [
+    {
+      "id": "mofet",
+      "used_bytes": 299669784785,
+      "limit_bytes": 1099511627776,
+      "percent": 27.25
+    },
+    {
+      "id": "satira",
+      "used_bytes": 478226719668,
+      "limit_bytes": 1099511627776,
+      "percent": 43.49
+    }
+  ]
+}

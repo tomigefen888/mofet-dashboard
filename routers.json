@@ -1,0 +1,14 @@
+[
+  {
+    "id": "mofet",
+    "base_url": "http://80.250.151.48",
+    "user": "admin",
+    "password": "Yehudit1!"
+  },
+  {
+    "id": "satira",
+    "base_url": "http://46.210.93.48",
+    "user": "admin",
+    "password": "Yehudit1!"
+  }
+]

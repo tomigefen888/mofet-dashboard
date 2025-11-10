@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>mofet – SIM Dashboard</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:0;padding:24px;background:#0b0f14;color:#e7eaf0}
+    h1{margin:0 0 8px;font-size:24px}
+    .sub{opacity:.7;margin-bottom:24px}
+    .grid{display:grid;gap:16px;grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+    .card{background:#111825;border:1px solid #1b2433;border-radius:16px;padding:16px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+    .row{display:flex;justify-content:space-between;margin:8px 0}
+    .bar{height:10px;background:#1b2433;border-radius:999px;overflow:hidden}
+    .fill{height:100%;background:linear-gradient(90deg,#4ade80,#22d3ee);width:0%}
+    table{width:100%;border-collapse:collapse;margin-top:16px}
+    th,td{border-bottom:1px solid #1b2433;padding:8px;text-align:right}
+    .pct{font-weight:700}
+  </style>
+</head>
+<body>
+  <h1>mofet – שימוש בחבילת גלישה</h1>
+  <div class="sub">כדי לרענן: תריץ שוב run-now.bat. הנתונים נשמרים ב-local/data.</div>
+
+  <div id="cards" class="grid"></div>
+
+  <h2 style="margin-top:24px">היסטוריית שליפות</h2>
+  <table id="table">
+    <thead><tr><th>זמן (UTC)</th><th>נתב</th><th>שימוש</th><th>מגבלה</th><th>%</th></tr></thead>
+    <tbody></tbody>
+  </table>
+
+  <script>
+  const fmtBytes = b => {
+    const u=['B','KB','MB','GB','TB'];
+    let i=0,x=Number(b);
+    while(x>=1024&&i<u.length-1){x/=1024;i++;}
+    return x.toFixed(i?1:0)+' '+u[i];
+  };
+
+  async function loadJSON(){
+    try{
+      const r=await fetch('local/data/state.json',{cache:'no-store'});
+      if(!r.ok)return null;
+      return await r.json();
+    }catch{return null;}
+  }
+
+  async function loadCSV(){
+    try{
+      const r=await fetch('local/data/data.csv',{cache:'no-store'});
+      if(!r.ok)return '';
+      return await r.text();
+    }catch{return '';}
+  }
+
+  function colorByPercent(p){
+    if(p<60) return '#22c55e';      // ירוק
+    if(p<85) return '#eab308';      // צהוב
+    return '#ef4444';               // אדום
+  }
+
+  function renderCards(state){
+    const wrap=document.getElementById('cards');
+    wrap.innerHTML='';
+    (state?.routers||[]).forEach(r=>{
+      const pct=r.percent ?? null;
+      const color=colorByPercent(pct||0);
+      const card=document.createElement('div');
+      card.className='card';
+      card.innerHTML=`
+        <div class="row"><div><strong>${r.id}</strong></div><div class="pct" style="color:${color}">${pct!=null?pct+'%':'-'}</div></div>
+        <div class="row"><div>שימוש</div><div>${fmtBytes(r.used_bytes)}</div></div>
+        <div class="row"><div>מגבלה</div><div>${fmtBytes(r.limit_bytes)}</div></div>
+        <div class="bar"><div class="fill" style="background:${color};width:${pct||0}%"></div></div>
+      `;
+      wrap.appendChild(card);
+    });
+  }
+
+  function renderTable(csv){
+    if(!csv)return;
+    const rows=csv.trim().split(/\n+/).map(l=>l.split(','));
+    if(!rows.length)return;
+    const [header,...data]=rows;
+    const tbody=document.querySelector('#table tbody');
+    tbody.innerHTML='';
+    data.slice(-50).reverse().forEach(r=>{
+      const tr=document.createElement('tr');
+      const pct=parseFloat(r[4]||0);
+      const color=colorByPercent(pct);
+      tr.innerHTML=`
+        <td>${r[0]}</td>
+        <td>${r[1]}</td>
+        <td>${fmtBytes(r[2])}</td>
+        <td>${fmtBytes(r[3])}</td>
+        <td style="color:${color}">${r[4]||'-'}</td>
+      `;
+      tbody.appendChild(tr);
+    });
+  }
+
+  async function refresh(){
+    const state=await loadJSON();
+    if(state) renderCards(state);
+    const csv=await loadCSV();
+    if(csv) renderTable(csv);
+  }
+
+  (async()=>{
+    await refresh();
+    setInterval(refresh,30000); // ריענון כל 30 שניות
+  })();
+</script>
+
+</body>
+</html>
