@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: mofet-dashboard
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: python app.py
+    plan: free
+    envVars:
+      - key: DISABLE_POETRY_INSTALL
+        value: 1
