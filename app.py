@@ -1,30 +1,35 @@
-from flask import Flask, send_file, jsonify
-import json, subprocess, os
+from flask import Flask, jsonify, render_template_string
+import subprocess, json, datetime, os
 
 app = Flask(__name__)
 
-@app.route('/')
-def index():
-    return send_file('dashboard.html')
+# --- קובץ ה־state.json שאליו נכתוב את הנתונים ---
+STATE_PATH = os.path.join(os.getcwd(), "local/data/state.json")
 
-@app.route('/refresh')
+# --- דף HTML נטען ישירות מהקובץ ---
+@app.route('/')
+def dashboard():
+    with open("dashboard.html", "r", encoding="utf-8") as f:
+        return render_template_string(f.read())
+
+# --- API שמחזיר את הנתונים האחרונים ---
+@app.route('/api/state')
+def get_state():
+    if os.path.exists(STATE_PATH):
+        with open(STATE_PATH, "r", encoding="utf-8") as f:
+            data = json.load(f)
+    else:
+        data = {"timestamp": None, "routers": []}
+    return jsonify(data)
+
+# --- כפתור לרענון נתונים בזמן אמת ---
+@app.route('/api/refresh', methods=['POST'])
 def refresh_data():
     try:
-        subprocess.run(["python3", "local_refresh_mofet.py"], check=True)
-        with open("local/data/state.json", encoding="utf-8") as f:
-            state = json.load(f)
-        return jsonify({"status": "ok", "state": state})
+        subprocess.run(["python", "local_refresh_mofet.py"], check=True)
+        return jsonify({"success": True, "time": datetime.datetime.now().isoformat()})
     except Exception as e:
-        return jsonify({"status": "error", "error": str(e)})
-
-@app.route('/data')
-def get_data():
-    try:
-        with open("local/data/state.json", encoding="utf-8") as f:
-            data = json.load(f)
-        return jsonify(data)
-    except Exception as e:
-        return jsonify({"error": str(e)})
+        return jsonify({"success": False, "error": str(e)}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8000)
+    app.run(host='0.0.0.0', port=10000)
