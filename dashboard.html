@@ -2,52 +2,86 @@
 <html lang="he">
 <head>
   <meta charset="UTF-8">
-  <title>לוח בקרה - נתבים</title>
+  <title>📊 דשבורד נתבים</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
-      text-align: center;
-      background: #f7f7f7;
+      font-family: 'Segoe UI', Arial, sans-serif;
+      background: #f2f4f8;
+      color: #333;
       margin: 0;
-      padding: 20px;
+      padding: 40px 10px;
       direction: rtl;
+      text-align: center;
     }
-    h1 { color: #333; }
-    table {
-      margin: 20px auto;
-      border-collapse: collapse;
-      width: 80%;
-      background: #fff;
-      border-radius: 10px;
-      overflow: hidden;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+    h1 {
+      font-size: 2em;
+      color: #1a1a1a;
+      margin-bottom: 10px;
     }
-    th, td {
-      padding: 12px 15px;
-      border-bottom: 1px solid #eee;
-    }
-    th { background: #333; color: #fff; }
-    tr:hover { background: #f2f2f2; }
     button {
-      background: #007bff;
+      background: linear-gradient(135deg, #007bff, #0062cc);
       color: white;
       border: none;
-      padding: 10px 20px;
-      border-radius: 8px;
+      padding: 12px 28px;
+      border-radius: 10px;
       cursor: pointer;
       font-size: 16px;
+      transition: 0.2s ease-in-out;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
     }
-    button:hover { background: #0056b3; }
+    button:hover {
+      background: linear-gradient(135deg, #0056b3, #004099);
+      transform: scale(1.03);
+    }
+    #status {
+      margin-top: 10px;
+      font-size: 14px;
+      color: #666;
+    }
+    table {
+      margin: 30px auto;
+      border-collapse: collapse;
+      width: 85%;
+      background: white;
+      border-radius: 12px;
+      overflow: hidden;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+    }
+    th {
+      background: #222;
+      color: #fff;
+      padding: 14px;
+      font-weight: normal;
+    }
+    td {
+      padding: 12px;
+      border-bottom: 1px solid #eee;
+      font-size: 15px;
+    }
+    tr:last-child td {
+      border-bottom: none;
+    }
+    tr:hover {
+      background-color: #f8f9fa;
+    }
+    .percent {
+      font-weight: bold;
+    }
   </style>
 </head>
 <body>
   <h1>📡 דשבורד נתבים</h1>
   <button onclick="refreshData()">רענון נתונים</button>
-  <p id="status" style="margin-top:10px;color:#666;">טוען נתונים...</p>
+  <p id="status">טוען נתונים...</p>
 
   <table id="routers-table">
     <thead>
-      <tr><th>שם נתב</th><th>נפח בשימוש</th><th>מגבלה</th><th>% שימוש</th></tr>
+      <tr>
+        <th>שם נתב</th>
+        <th>נפח בשימוש</th>
+        <th>מגבלה</th>
+        <th>% שימוש</th>
+      </tr>
     </thead>
     <tbody></tbody>
   </table>
@@ -64,10 +98,10 @@
             <td>${r.id}</td>
             <td>${(r.used_bytes/1e9).toFixed(2)} GB</td>
             <td>${(r.limit_bytes/1e9).toFixed(2)} GB</td>
-            <td>${r.percent}%</td>
+            <td class="percent">${r.percent}%</td>
           </tr>`;
       }
-      document.getElementById('status').innerText = 
+      document.getElementById('status').innerText =
         'עודכן לאחרונה: ' + (data.timestamp || 'אין נתונים');
     }
 
@@ -76,10 +110,10 @@
       const res = await fetch('/api/refresh', {method: 'POST'});
       const r = await res.json();
       if (r.success) {
-        document.getElementById('status').innerText = 'הנתונים עודכנו בהצלחה!';
+        document.getElementById('status').innerText = '✅ הנתונים עודכנו בהצלחה!';
         await loadData();
       } else {
-        document.getElementById('status').innerText = 'שגיאה: ' + r.error;
+        document.getElementById('status').innerText = '⚠️ שגיאה: ' + r.error;
       }
     }
 
