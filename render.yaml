@@ -1,9 +1,0 @@
-==> Using Python version 3.13.4 (default)
-==> Running build command 'pip install -r requirements.txt'...
-Collecting Flask
-Collecting requests
-Collecting gunicorn
-Installing collected packages
-Build successful 🎉
-==> Deploying...
-==> Running 'python app.py'
