@@ -30,6 +30,16 @@ def refresh_data():
         return jsonify({"success": True, "time": datetime.datetime.now().isoformat()})
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
+@app.route('/api/upload', methods=['POST'])
+def upload_state():
+    file = request.files.get('file')
+    if not file:
+        return jsonify({"error": "no file"}), 400
+    path = os.path.join("local/data", "state.json")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    file.save(path)
+    return jsonify({"status": "ok"})
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=10000)
+
