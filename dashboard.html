@@ -1,123 +1,265 @@
 <!DOCTYPE html>
-<html lang="he">
+<html lang="he" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <title>📊 דשבורד נתבים</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>mofet – שימוש בחבילת גלישה</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     body {
-      font-family: 'Segoe UI', Arial, sans-serif;
-      background: #f2f4f8;
-      color: #333;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
       margin: 0;
-      padding: 40px 10px;
-      direction: rtl;
-      text-align: center;
+      padding: 24px;
+      background: #0b0f14;
+      color: #e7eaf0;
     }
+
     h1 {
-      font-size: 2em;
-      color: #1a1a1a;
-      margin-bottom: 10px;
+      margin: 0 0 8px;
+      font-size: 24px;
     }
-    button {
-      background: linear-gradient(135deg, #007bff, #0062cc);
-      color: white;
-      border: none;
-      padding: 12px 28px;
-      border-radius: 10px;
-      cursor: pointer;
-      font-size: 16px;
-      transition: 0.2s ease-in-out;
-      box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+
+    .grid {
+      display: grid;
+      gap: 16px;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
     }
-    button:hover {
-      background: linear-gradient(135deg, #0056b3, #004099);
-      transform: scale(1.03);
+
+    .card {
+      background: #111825;
+      border: 1px solid #1b2433;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, .25);
     }
-    #status {
-      margin-top: 10px;
-      font-size: 14px;
-      color: #666;
+
+    .row {
+      display: flex;
+      justify-content: space-between;
+      margin: 6px 0;
     }
-    table {
-      margin: 30px auto;
-      border-collapse: collapse;
-      width: 85%;
-      background: white;
-      border-radius: 12px;
+
+    .bar {
+      height: 10px;
+      background: #1b2433;
+      border-radius: 999px;
       overflow: hidden;
-      box-shadow: 0 3px 10px rgba(0,0,0,0.1);
+      margin-top: 6px;
     }
+
+    .fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4ade80, #22d3ee);
+      width: 0%;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 24px;
+    }
+
+    th, td {
+      border-bottom: 1px solid #1b2433;
+      padding: 8px;
+      text-align: right;
+    }
+
     th {
-      background: #222;
-      color: #fff;
-      padding: 14px;
-      font-weight: normal;
+      font-weight: 600;
+      background: #0e1520;
     }
-    td {
-      padding: 12px;
-      border-bottom: 1px solid #eee;
-      font-size: 15px;
+
+    .pct {
+      font-weight: 700;
     }
-    tr:last-child td {
-      border-bottom: none;
+
+    #refreshBtn {
+      display: inline-block;
+      background: #2563eb;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: background .2s;
+      margin-bottom: 20px;
     }
-    tr:hover {
-      background-color: #f8f9fa;
+
+    #refreshBtn:hover {
+      background: #1d4ed8;
     }
-    .percent {
-      font-weight: bold;
+
+    .timestamp {
+      opacity: .6;
+      margin-top: -12px;
+      margin-bottom: 24px;
+    }
+
+    /* פס אזהרה אדום */
+    #alert {
+      display: none;
+      background: #7f1d1d;
+      color: #fca5a5;
+      border: 1px solid #dc2626;
+      padding: 10px 15px;
+      border-radius: 10px;
+      margin-bottom: 20px;
+      font-weight: 500;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.4);
+    }
+
+    canvas {
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
-  <h1>📡 דשבורד נתבים</h1>
-  <button onclick="refreshData()">רענון נתונים</button>
-  <p id="status">טוען נתונים...</p>
+  <h1>דשבורד נתבים 🛰️</h1>
+  <div id="alert"></div>
+  <button id="refreshBtn">רענון נתונים</button>
+  <div id="timestamp" class="timestamp"></div>
 
-  <table id="routers-table">
-    <thead>
-      <tr>
-        <th>שם נתב</th>
-        <th>נפח בשימוש</th>
-        <th>מגבלה</th>
-        <th>% שימוש</th>
-      </tr>
-    </thead>
+  <div id="cards" class="grid"></div>
+
+  <h2 style="margin-top:24px">היסטוריית שליפות</h2>
+  <table id="table">
+    <thead><tr><th>זמן (UTC)</th><th>נתב</th><th>שימוש</th><th>מגבלה</th><th>%</th></tr></thead>
     <tbody></tbody>
   </table>
 
   <script>
-    async function loadData() {
-      const res = await fetch('/api/state');
-      const data = await res.json();
-      const tbody = document.querySelector('#routers-table tbody');
-      tbody.innerHTML = '';
-      for (const r of data.routers) {
-        tbody.innerHTML += `
-          <tr>
-            <td>${r.id}</td>
-            <td>${(r.used_bytes/1e9).toFixed(2)} GB</td>
-            <td>${(r.limit_bytes/1e9).toFixed(2)} GB</td>
-            <td class="percent">${r.percent}%</td>
-          </tr>`;
+    const fmtBytes = b => {
+      const u = ['B', 'KB', 'MB', 'GB', 'TB'];
+      let i = 0, x = Number(b);
+      while (x >= 1024 && i < u.length - 1) { x /= 1024; i++; }
+      return x.toFixed(i ? 2 : 0) + ' ' + u[i];
+    };
+
+    function colorByPercent(p) {
+      if (p < 60) return '#22c55e';
+      if (p < 85) return '#eab308';
+      return '#ef4444';
+    }
+
+    function renderCards(state) {
+      const wrap = document.getElementById('cards');
+      wrap.innerHTML = '';
+      const routers = state?.routers || [];
+      routers.forEach(r => {
+        const pct = r.percent ?? null;
+        const color = colorByPercent(pct || 0);
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `
+          <div class="row"><div><strong>${r.id}</strong></div><div class="pct" style="color:${color}">${pct != null ? pct + '%' : '-'}</div></div>
+          <div class="row"><div>שימוש</div><div>${fmtBytes(r.used_bytes)}</div></div>
+          <div class="row"><div>מגבלה</div><div>${fmtBytes(r.limit_bytes)}</div></div>
+          <div class="bar"><div class="fill" style="background:${color};width:${pct || 0}%"></div></div>
+          <canvas id="chart-${r.id}" height="100"></canvas>
+        `;
+        wrap.appendChild(card);
+      });
+      document.getElementById('timestamp').textContent = `עודכן לאחרונה: ${state.timestamp || '-'}`;
+    }
+
+    async function loadState() {
+      try {
+        const res = await fetch('/api/state', { cache: 'no-store' });
+        if (!res.ok) return null;
+        return await res.json();
+      } catch {
+        return null;
       }
-      document.getElementById('status').innerText =
-        'עודכן לאחרונה: ' + (data.timestamp || 'אין נתונים');
+    }
+
+    async function loadCSV() {
+      try {
+        const res = await fetch('/api/data', { cache: 'no-store' });
+        if (!res.ok) return '';
+        return await res.text();
+      } catch {
+        return '';
+      }
+    }
+
+    function renderCharts(csv) {
+      if (!csv) return;
+      const rows = csv.trim().split(/\n+/).map(l => l.split(','));
+      if (rows.length < 2) return;
+      const [header, ...data] = rows;
+
+      const grouped = {};
+      data.forEach(r => {
+        const id = r[1];
+        const pct = parseFloat(r[4] || 0);
+        if (!grouped[id]) grouped[id] = [];
+        grouped[id].push(pct);
+      });
+
+      Object.keys(grouped).forEach(id => {
+        const canvas = document.getElementById(`chart-${id}`);
+        if (!canvas) return;
+        new Chart(canvas, {
+          type: 'line',
+          data: {
+            labels: grouped[id].map((_, i) => i + 1),
+            datasets: [{
+              label: '% שימוש',
+              data: grouped[id],
+              borderColor: '#38bdf8',
+              backgroundColor: 'rgba(56,189,248,0.1)',
+              tension: 0.3,
+              fill: true,
+            }]
+          },
+          options: {
+            scales: {
+              y: { ticks: { color: '#94a3b8' }, grid: { color: '#1e293b' } },
+              x: { display: false }
+            },
+            plugins: { legend: { display: false } },
+          }
+        });
+      });
+    }
+
+    function handleAlerts(state) {
+      const expected = ['mofet', 'satira'];
+      const routers = state?.routers || [];
+      const missing = expected.filter(id => !routers.some(r => r.id === id));
+      const alertDiv = document.getElementById('alert');
+      if (missing.length) {
+        alertDiv.style.display = 'block';
+        alertDiv.textContent = `⚠️ לא ניתן לגשת לנתבים: ${missing.join(', ')}`;
+      } else {
+        alertDiv.style.display = 'none';
+      }
     }
 
     async function refreshData() {
-      document.getElementById('status').innerText = 'מרענן נתונים...';
-      const res = await fetch('/api/refresh', {method: 'POST'});
-      const r = await res.json();
-      if (r.success) {
-        document.getElementById('status').innerText = '✅ הנתונים עודכנו בהצלחה!';
-        await loadData();
-      } else {
-        document.getElementById('status').innerText = '⚠️ שגיאה: ' + r.error;
-      }
+      document.getElementById('refreshBtn').textContent = 'מרענן...';
+      try {
+        await fetch('/api/refresh', { method: 'POST' });
+      } catch {}
+      setTimeout(loadAndRender, 5000);
     }
 
-    loadData();
+    async function loadAndRender() {
+      const state = await loadState();
+      if (state) {
+        renderCards(state);
+        handleAlerts(state);
+      }
+      const csv = await loadCSV();
+      if (csv) renderCharts(csv);
+      document.getElementById('refreshBtn').textContent = 'רענון נתונים';
+    }
+
+    document.getElementById('refreshBtn').onclick = refreshData;
+    loadAndRender();
+    setInterval(loadAndRender, 30000);
   </script>
 </body>
 </html>
