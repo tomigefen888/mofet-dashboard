@@ -10,11 +10,11 @@ OUT_DIR.mkdir(parents=True, exist_ok=True)
 OUT_JSON = OUT_DIR / "state.json"
 OUT_CSV = OUT_DIR / "data.csv"
 
+# === כתובת יעד של השרת שלך ב-Render ===
+RENDER_UPLOAD_URL = "https://mofet-dashboard.onrender.com/api/upload"  # שנה לכתובת שלך אם שונה
+
 def find_used_limit(obj):
-    """
-    מחפשת בכל עומק ה־JSON אחרי data_used ו-data_limit
-    גם אם הם בתוך רשימות/אובייקטים מקוננים
-    """
+    """חיפוש שדות data_used ו-data_limit ב-JSON"""
     if isinstance(obj, dict):
         if "data_used" in obj and "data_limit" in obj:
             try:
@@ -80,9 +80,8 @@ def fetch_router_data(router):
         raise SystemExit(f"הבקשה ל-bulk נכשלה ({resp.status_code}) עבור {router['id']}")
 
     data = resp.json()
-    print(json.dumps(data, ensure_ascii=False, indent=2)[:800])
-
     return find_used_limit(data)
+
 
 # === מעבר על כל הנתבים ===
 ts = dt.datetime.utcnow().isoformat() + "Z"
@@ -113,5 +112,14 @@ with open(OUT_JSON, "w", encoding="utf-8") as f:
     json.dump({"timestamp": ts, "routers": routers_state}, f, ensure_ascii=False, indent=2)
 
 print("\n✅ כל הנתבים עודכנו בהצלחה!")
-#input("\nלחץ Enter לסגירה...")
 
+# === שליחה לשרת Render ===
+try:
+    with open(OUT_JSON, "rb") as f:
+        res = requests.post(RENDER_UPLOAD_URL, files={"file": f}, timeout=15)
+    if res.status_code == 200:
+        print("📤 הנתונים הועלו בהצלחה לשרת Render.")
+    else:
+        print(f"⚠️ שגיאה בשליחה לשרת Render: {res.status_code} {res.text}")
+except Exception as e:
+    print(f"❌ שגיאה בשליחה לשרת Render: {e}")
