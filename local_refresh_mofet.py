@@ -113,4 +113,5 @@ with open(OUT_JSON, "w", encoding="utf-8") as f:
     json.dump({"timestamp": ts, "routers": routers_state}, f, ensure_ascii=False, indent=2)
 
 print("\n✅ כל הנתבים עודכנו בהצלחה!")
-input("\nלחץ Enter לסגירה...")
+#input("\nלחץ Enter לסגירה...")
+
